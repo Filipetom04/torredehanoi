@@ -1,0 +1,139 @@
+import pygame
+import sys
+
+# Inicializar o Pygame
+pygame.init()
+
+# Definir algumas cores
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 100, 100)
+BLUE = (100, 100, 255)
+GREEN = (100, 255, 100)
+YELLOW = (255, 255, 100)
+ORANGE = (255, 165, 0)
+PURPLE = (160, 32, 240)
+BROWN = (139, 69, 19)  # Cor de madeira para as hastes e o suporte
+
+# Lista de cores para os discos (podemos adicionar mais se necessário)
+DISK_COLORS = [RED, BLUE, GREEN, YELLOW, ORANGE, PURPLE]
+
+# Definir dimensões da janela
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Torre de Hanói com Animação Colorida")
+
+# Definir dimensões das hastes e discos
+haste_width = 10
+haste_height = 250
+disk_height = 20
+
+# Posições das hastes
+haste_positions = [(WIDTH // 4, HEIGHT - 50), (WIDTH // 2, HEIGHT - 50), (3 * WIDTH // 4, HEIGHT - 50)]
+
+
+# Função para gerar a tabela binária
+def gerar_tabela_binaria(n):
+    max_num = 2 ** n
+    tabela = []
+    for i in range(max_num):
+        binario = format(i, f'0{n}b')  # Formata o número i em binário com n dígitos
+        tabela.append([int(b) for b in binario])
+    return tabela
+
+
+# Função para desenhar as torres e discos
+def desenhar_torres(discos):
+    screen.fill(WHITE)
+
+    # Desenhar o suporte de madeira
+    pygame.draw.rect(screen, BROWN, (50, HEIGHT - 50, WIDTH - 100, 10))
+
+    # Desenhar as hastes de madeira
+    for pos in haste_positions:
+        pygame.draw.rect(screen, BROWN, (pos[0] - haste_width // 2, pos[1] - haste_height, haste_width, haste_height))
+
+    # Desenhar os discos
+    for haste_idx, torre in enumerate(discos):
+        for altura, disco in enumerate(torre):
+            largura_disco = (disco * 20) + 40  # Discos maiores têm mais largura
+            x = haste_positions[haste_idx][0] - largura_disco // 2
+            y = haste_positions[haste_idx][1] - (altura + 1) * disk_height
+            cor_disco = DISK_COLORS[disco % len(DISK_COLORS)]  # Seleciona a cor baseada no índice do disco
+            pygame.draw.rect(screen, cor_disco, (x, y, largura_disco, disk_height))
+            pygame.draw.rect(screen, BLACK, (x, y, largura_disco, disk_height), 2)  # Borda preta para os discos
+
+    pygame.display.update()
+
+
+# Função para mover um disco suavemente
+def mover_disco_suave(discos, origem, destino):
+    disco = discos[origem].pop()
+    discos[destino].append(disco)
+    desenhar_torres(discos)
+    pygame.time.delay(1300)  # Pausa para visualizar o movimento
+
+
+# Função recursiva para resolver a Torre de Hanói
+def torre_hanoi(n, origem, destino, auxiliar, discos, movimentos):
+    if n == 1:
+        mover_disco_suave(discos, origem, destino)
+        movimentos.append((origem, destino))
+    else:
+        torre_hanoi(n - 1, origem, auxiliar, destino, discos, movimentos)
+        mover_disco_suave(discos, origem, destino)
+        movimentos.append((origem, destino))
+        torre_hanoi(n - 1, auxiliar, destino, origem, discos, movimentos)
+
+
+# Função para imprimir a tabela binária no terminal
+def imprimir_tabela_binaria(tabela, n):
+    print("\nTabela Binária:")
+
+    # Imprimir os rótulos das potências de dois (2^0, 2^1, 2^2, etc.)
+    headers = [f"2^{n - col - 1}" for col in range(n)]  # Ordem decrescente das potências
+    print("  ".join(headers))
+
+    # Imprimir as linhas da tabela, com os números à esquerda (0 a 15, por exemplo)
+    for idx, linha in enumerate(tabela):
+        linha_str = "  ".join(str(bit) for bit in linha)
+        print(f"{idx:2} {linha_str}")  # Exibir o índice (0 a 15) seguido da linha binária
+
+
+def main():
+    # Solicitar o número de discos
+    n = int(input("Quantos discos são? "))
+    if n <= 0 or n > len(DISK_COLORS):
+        print(f"Por favor, insira um número de discos entre 1 e {len(DISK_COLORS)}.")
+        return
+
+    # Gerar a tabela binária
+    tabela = gerar_tabela_binaria(n)
+
+    # Inicializar as torres
+    discos = [list(range(n, 0, -1)), [], []]  # Todos os discos começam na primeira torre
+
+    # Desenhar o estado inicial
+    desenhar_torres(discos)
+
+    # Esperar o usuário iniciar a animação
+    print("Pressione qualquer tecla na janela para iniciar a animação.")
+    iniciando = True
+    while iniciando:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                iniciando = False
+
+    # Resolver a Torre de Hanói e animar os movimentos
+    movimentos = []
+    torre_hanoi(n, 0, 2, 1, discos, movimentos)
+
+    # Após a animação, imprimir a tabela binária no terminal
+    imprimir_tabela_binaria(tabela, n)
+
+
+if __name__ == "__main__":
+    main()
